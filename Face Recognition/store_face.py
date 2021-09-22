@@ -4,7 +4,6 @@ import datetime as dt
 
 cap = cv.VideoCapture(0)
 face_cascade = cv.CascadeClassifier('haarcascade_frontalface_alt.xml')
-print(face_cascade)
 skip = 0
 face_data = []
 data_path = './face_data/'
@@ -46,10 +45,15 @@ while cap.isOpened():
 
 
 face_data = np.array(face_data)
-print('shape ',face_data.shape)
+#print('shape ',face_data.shape)
 face_data = face_data.reshape((face_data.shape[0],-1))
 
 np.save(data_path+filename,face_data)
-print('Data saved at :{}'.format(data_path+filename+'.npy'))
+#print('Data saved at :{}'.format(data_path+filename+'.npy'))
 cap.release()
 cv.destroyAllWindows()
+
+"""
+Observations - 
+  Haar classifier is fairly accurate, however it fails to recognize the facial features when the person is not directly looking at the camera.
+"""

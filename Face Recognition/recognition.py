@@ -1,31 +1,46 @@
 import numpy as np
 import cv2 as cv
 import os
+import datetime as dt
 
 def dist(p1,p2,p):
   # p = 2 for eucledian distance
   return np.sqrt(((p1-p2)**p).sum())
 
 def knn(train,test,k=5):
-  print('Train :',train.shape)
-  print('Test :',test.shape)
+  #print('Train :',train.shape)
+  #print('Test :',test.shape)
   distances = []
   for i in range(train.shape[0]):
     x = train[i, :-1]
     y = train[i,-1]
     d = dist(test,x,2)
     distances.append([d,y])
-  print("Distances = ",distances)
+  #print("Distances = ",distances)
   K_distances = sorted(distances, key=lambda x: x[0])[:k] # closest K distances
-  print("K_distances = ",K_distances)
+  #print("K_distances = ",K_distances)
   labels = np.array(K_distances)[:,-1]
-  print("labels = ",labels)
+  #print("labels = ",labels)
   output = np.unique(labels,return_counts=True)
-  print("output = ",output)
+  #print("output = ",output)
   index = np.argmax(output[1])
-  print("index = ",index)
-  print(output[0][index])
+  #print("index = ",index)
+  #print(output[0][index])
   return output[0][index]
+
+
+def markAttendance(name):
+  with open('attendance.csv','r+') as f:
+    data = f.readlines()
+    names = []
+    for line in data:
+      entry = line.split(',')
+      names.append(entry[0])
+    if name not in names:
+      time = dt.datetime.now().strftime('%H:%M:%S')
+      f.writelines(f'\n{name},{time}')
+
+
 
 cap = cv.VideoCapture(0)
 face_cascade = cv.CascadeClassifier('haarcascade_frontalface_alt.xml')
@@ -45,15 +60,15 @@ for file in os.listdir(data_Path):
     class_ID += 1
     labels.append(target)
 
-print('Names ::',names)
+#print('Names ::',names)
 
 face_data = np.concatenate(face_data, axis=0)
-print('Shape FD:',face_data.shape)
+#print('Shape FD:',face_data.shape)
 face_labels = np.concatenate(labels, axis=0).reshape((-1,1))
-print('Shape FL:',face_labels.shape)
+#print('Shape FL:',face_labels.shape)
 
 trainSet = np.concatenate((face_data,face_labels), axis = 1)
-print('Training set :: ',trainSet.shape)
+#print('Training set :: ',trainSet.shape)
 
 while cap.isOpened():
   ret, frame = cap.read()
@@ -71,14 +86,17 @@ while cap.isOpened():
         try : 
           faceROI = frame[y-padding:y+h+padding, x-padding:x+w+padding]
           face_section = cv.resize(faceROI,(100,100))
+          # predict
+          out = knn(trainSet,face_section.flatten())
         except Exception as e:
-                    print(str(e))
-        # predict
-        out = knn(trainSet,face_section.flatten())
-
+            print(str(e))
+        name = names[int(out)].upper()
         # mark it
         cv.rectangle(frame,(x,y),(x+w,y+h),(255,0,0),3)
-        cv.putText(frame,names[int(out)],(x,y-10),cv.FONT_HERSHEY_SIMPLEX,1,(0,255,0),1,cv.LINE_AA)
+        cv.putText(frame,name,(x,y-10),cv.FONT_HERSHEY_SIMPLEX,1,(0,255,0),1,cv.LINE_AA)
+
+        # attendance 
+        markAttendance(name)
     
     cv.imshow('frame',frame)
     if cv.waitKey(1) & 0xFF == ord('q'):
@@ -87,7 +105,3 @@ while cap.isOpened():
 cap.release()
 cv.destroyAllWindows()
 
-"""
-Observations - 
-  Haar classifier is fairly accurate, however it fails to recognize the facial features when the person is not directly looking at the camera.
-"""
