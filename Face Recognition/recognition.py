@@ -87,3 +87,7 @@ while cap.isOpened():
 cap.release()
 cv.destroyAllWindows()
 
+"""
+Observations - 
+  Haar classifier is fairly accurate, however it fails to recognize the facial features when the person is not directly looking at the camera.
+"""
